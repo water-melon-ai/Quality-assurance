@@ -1,0 +1,297 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   FrostFlow — globals.css
+   Full design system: CSS variables + base styles + resets
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Inter:wght@300;400;500&family=DM+Mono:wght@300;400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ────────────────────────────────────────────────── */
+:root {
+  /* Background layers */
+  --bg-deep:      #04040D;
+  --bg-base:      #07071A;
+  --bg-elevated:  #0C0C24;
+
+  /* Glass surfaces */
+  --glass-1: rgba(255, 255, 255, 0.03);
+  --glass-2: rgba(255, 255, 255, 0.06);
+  --glass-3: rgba(255, 255, 255, 0.10);
+  --glass-4: rgba(255, 255, 255, 0.16);
+
+  /* Frost accent */
+  --frost-100: #E8F0FF;
+  --frost-200: #C5D8FF;
+  --frost-300: #8FB5FF;
+  --frost-400: #5B8DEF;
+  --frost-500: #3A6FD8;
+  --frost-600: #1F4FB5;
+
+  /* Ice accent */
+  --ice-300: #A8F0E8;
+  --ice-400: #00E5C0;
+  --ice-500: #00BFA0;
+
+  /* Alert colors */
+  --critical: #FF4D6A;
+  --high:     #FF8C42;
+  --medium:   #F0C040;
+  --low:      #00E5C0;
+  --safe:     #4DFFA8;
+
+  /* Borders */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-bright:  rgba(255, 255, 255, 0.18);
+  --border-frost:   rgba(91, 141, 239, 0.30);
+
+  /* Typography scale */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  26px;
+  --text-3xl:  34px;
+  --text-4xl:  44px;
+  --text-5xl:  58px;
+  --text-hero: clamp(52px, 8vw, 96px);
+
+  /* Glass surfaces — composite */
+  --glass-card-bg: rgba(255, 255, 255, 0.04);
+  --glass-card-border: rgba(255, 255, 255, 0.08);
+  --glass-card-shadow:
+    0 0 0 1px rgba(255,255,255,0.04) inset,
+    0 8px 32px rgba(0,0,0,0.4),
+    0 1px 0 rgba(255,255,255,0.08) inset;
+
+  --glass-elevated-bg: rgba(255, 255, 255, 0.07);
+  --glass-elevated-border: rgba(255, 255, 255, 0.14);
+  --glass-elevated-shadow:
+    0 0 0 1px rgba(255,255,255,0.06) inset,
+    0 16px 48px rgba(0,0,0,0.5),
+    0 1px 0 rgba(255,255,255,0.12) inset,
+    0 0 80px rgba(91,141,239,0.08);
+
+  --glass-frost-bg: rgba(91, 141, 239, 0.10);
+  --glass-frost-border: rgba(91, 141, 239, 0.25);
+  --glass-frost-shadow:
+    0 0 40px rgba(91,141,239,0.12),
+    0 1px 0 rgba(255,255,255,0.10) inset;
+
+  /* Transitions */
+  --transition-fast: 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-base: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition-slow: 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ─── Base Reset ────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-color: var(--bg-deep);
+  color: var(--frost-100);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--text-base);
+  font-weight: 400;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+
+  /* Subtle noise texture via inline SVG */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* ─── Typography Defaults ───────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Syne', system-ui, sans-serif;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+h1 { font-size: var(--text-hero); font-weight: 800; letter-spacing: -0.03em; }
+h2 { font-size: var(--text-4xl); }
+h3 { font-size: var(--text-3xl); }
+h4 { font-size: var(--text-2xl); }
+h5 { font-size: var(--text-xl); }
+h6 { font-size: var(--text-lg); }
+
+p {
+  color: rgba(232, 240, 255, 0.7);
+  line-height: 1.7;
+}
+
+a {
+  color: var(--frost-300);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--frost-200);
+}
+
+code, pre, .font-mono {
+  font-family: 'DM Mono', ui-monospace, monospace;
+}
+
+/* ─── Selection ─────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(91, 141, 239, 0.3);
+  color: #ffffff;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(91, 141, 239, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 141, 239, 0.5);
+}
+
+/* ─── Focus ─────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid rgba(91, 141, 239, 0.6);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ─── Background Orb Animations ─────────────────────────────────────────────── */
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%       { transform: translate(30px, -50px) scale(1.05); }
+  66%       { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  50%       { transform: translate(-40px, 60px) scale(1.08); }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes drawStroke {
+  from { stroke-dashoffset: 440; }
+  to   { stroke-dashoffset: 0; }
+}
+
+/* ─── Utility: Visually Hidden ──────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ─── Utility: Gradient Text ────────────────────────────────────────────────── */
+.text-gradient-frost {
+  background: linear-gradient(135deg, var(--frost-300), var(--ice-400));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-hero {
+  background: linear-gradient(135deg, #ffffff 0%, rgba(143, 181, 255, 0.9) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ─── Utility: Background System ────────────────────────────────────────────── */
+.bg-scene {
+  position: relative;
+  background-color: var(--bg-deep);
+  overflow: hidden;
+}
+
+.bg-scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ─── Dot Grid Overlay ───────────────────────────────────────────────────────── */
+.dot-grid {
+  background-image: radial-gradient(
+    circle,
+    rgba(91, 141, 239, 0.12) 1px,
+    transparent 1px
+  );
+  background-size: 32px 32px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+}
+
+/* ─── Ambient Orbs ──────────────────────────────────────────────────────────── */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.orb-frost {
+  background: rgba(91, 141, 239, 0.08);
+  animation: orbFloat1 60s ease-in-out infinite;
+}
+
+.orb-ice {
+  background: rgba(0, 229, 192, 0.05);
+  animation: orbFloat2 80s ease-in-out infinite;
+}

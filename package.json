@@ -1,0 +1,33 @@
+{
+  "name": "frostflow",
+  "version": "0.0.1",
+  "private": true,
+  "description": "FrostFlow — Website QA auditing platform",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean",
+    "db:generate": "turbo run db:generate",
+    "db:push": "turbo run db:push",
+    "db:migrate": "turbo run db:migrate",
+    "db:seed": "turbo run db:seed",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+  },
+  "devDependencies": {
+    "turbo": "^1.13.4",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.15"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "packageManager": "npm@10.8.2"
+}

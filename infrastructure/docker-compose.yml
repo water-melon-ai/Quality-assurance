@@ -1,0 +1,96 @@
+# Local dev infra:        docker compose -f infrastructure/docker-compose.yml up -d
+# Full stack (prod-like): docker compose -f infrastructure/docker-compose.yml --profile app up -d --build
+#   (needs a filled-in .env at the repo root — see .env.example)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: frostflow_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-frostflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-frostflow_dev_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-frostflow}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: frostflow_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy noeviction
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Application (profile: app) ──────────────────────────────────────────────
+  migrate:
+    profiles: [app]
+    build: { context: .., dockerfile: apps/worker/Dockerfile, target: installer }
+    working_dir: /app/packages/database
+    command: npx prisma db push --schema schema.prisma --skip-generate
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-frostflow}:${POSTGRES_PASSWORD:-frostflow_dev_pass}@postgres:5432/${POSTGRES_DB:-frostflow}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  worker:
+    profiles: [app]
+    build: { context: .., dockerfile: apps/worker/Dockerfile }
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-frostflow}:${POSTGRES_PASSWORD:-frostflow_dev_pass}@postgres:5432/${POSTGRES_DB:-frostflow}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    ports:
+      - '4000:4000'
+
+  web:
+    profiles: [app]
+    build: { context: .., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-frostflow}:${POSTGRES_PASSWORD:-frostflow_dev_pass}@postgres:5432/${POSTGRES_DB:-frostflow}
+      WORKER_API_URL: http://worker:4000
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      worker: { condition: service_started }
+    ports:
+      - '3000:3000'
+
+  # ─── Dev tools (profile: tools) ──────────────────────────────────────────────
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - '8081:8081'
+    depends_on: [redis]
+    profiles: [tools]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    name: frostflow_network

@@ -1,0 +1,26 @@
+{
+  "name": "@frostflow/database",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "postinstall": "prisma generate --schema schema.prisma",
+    "db:generate": "prisma generate --schema schema.prisma",
+    "db:push": "prisma db push --schema schema.prisma",
+    "db:migrate": "prisma migrate dev --schema schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@frostflow/types": "*"
+  },
+  "devDependencies": {
+    "prisma": "^5.22.0",
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.15",
+    "tsx": "^4.17.0"
+  }
+}

@@ -1,0 +1,352 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// FrostFlow — Prisma Schema
+// Database: PostgreSQL (local Docker, Neon, Supabase, …)
+// ═══════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Tier {
+  free
+  studio
+  agency
+}
+
+enum JobStatus {
+  queued
+  crawling
+  checking
+  scoring
+  generating_report
+  done
+  failed
+}
+
+enum Severity {
+  critical
+  high
+  medium
+  low
+}
+
+enum CheckCategory {
+  performance
+  security
+  accessibility
+  seo
+  links
+  mobile
+}
+
+enum MonitorSchedule {
+  every_6h
+  every_12h
+  every_24h
+}
+
+enum Effort {
+  low
+  medium
+  high
+}
+
+// ─── Users ──────────────────────────────────────────────────────────────────
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  hashedPassword   String?  // for lucia auth
+  tier             Tier     @default(free)
+  stripeCustomerId String?  @unique
+  agencyName       String?
+  logoUrl          String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  sessions Session[]
+  jobs     Job[]
+  reports  Report[]
+  monitors Monitor[]
+  usage    Usage[]
+  teamMemberships TeamMember[]
+
+  @@map("users")
+}
+
+// ─── Sessions ───────────────────────────────────────────────────────────────
+// Lucia Auth sessions
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ─── Jobs ────────────────────────────────────────────────────────────────────
+// A job represents one test run against a URL
+
+model Job {
+  id           String    @id @default(cuid())
+  userId       String?   // null for anonymous free-tier jobs
+  url          String
+  status       JobStatus @default(queued)
+  tier         Tier      @default(free)
+  pagesCrawled Int       @default(0)
+  progress     Int       @default(0) // 0–100
+  error        String?
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  result Result?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("jobs")
+}
+
+// ─── Results ─────────────────────────────────────────────────────────────────
+// The computed output of a completed job
+
+model Result {
+  id    String @id @default(cuid())
+  jobId String @unique
+
+  // Score
+  score Int   // 0–100
+  grade String // A / B / C / D / F
+
+  // Score breakdown per category (stored as JSON for flexibility)
+  scoreBreakdown Json // { performance, security, accessibility, seo, links, mobile }
+
+  // Summary counts
+  criticalCount Int @default(0)
+  highCount     Int @default(0)
+  mediumCount   Int @default(0)
+  lowCount      Int @default(0)
+  passedChecks  Int @default(0)
+
+  // Performance snapshot (top-level for quick dashboard display)
+  loadTimeMs  Int?
+  pageSizeBytes Int?
+  fcpMs       Int?
+  lcpMs       Int?
+
+  // Full raw check data
+  rawData Json // CheckResults
+
+  // AI-generated report (null for free tier)
+  geminiReport Json?
+
+  // Screenshots (stored in R2, URLs saved here)
+  desktopScreenshotUrl String?
+  mobileScreenshotUrl  String?
+
+  // Cache flag — if this result was served from cache
+  cached Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  issues  Issue[]
+  reports Report[]
+
+  @@index([createdAt])
+  @@map("results")
+}
+
+// ─── Issues ──────────────────────────────────────────────────────────────────
+// Individual issues found during a check
+
+model Issue {
+  id       String        @id @default(cuid())
+  resultId String
+
+  severity  Severity
+  category  CheckCategory
+  title     String
+
+  // Plain English for non-technical users
+  businessImpact  String
+
+  // Raw technical info for developers
+  technicalDetail String
+
+  // Where on the page/site the issue was found
+  location String?
+
+  // Step-by-step fix
+  fix    String
+  effort Effort
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  result Result @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@index([resultId])
+  @@index([severity])
+  @@index([category])
+  @@map("issues")
+}
+
+// ─── Reports ─────────────────────────────────────────────────────────────────
+// A shareable / downloadable report artifact
+
+model Report {
+  id       String @id @default(cuid())
+  resultId String
+  userId   String?
+
+  // PDF stored in Cloudflare R2
+  pdfUrl String?
+
+  // Random token for public share link
+  shareToken String   @unique @default(cuid())
+  expiresAt  DateTime
+
+  // White-label branding (Studio + Agency)
+  whiteLabelAgencyName String?
+  whiteLabelLogoUrl    String?
+
+  // Whether user has revoked public access
+  revoked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  // Relations
+  result Result  @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([shareToken])
+  @@index([userId])
+  @@map("reports")
+}
+
+// ─── Monitors ────────────────────────────────────────────────────────────────
+// Scheduled recurring checks (Agency tier only)
+
+model Monitor {
+  id     String @id @default(cuid())
+  userId String
+  url    String
+
+  schedule     MonitorSchedule @default(every_6h)
+  active       Boolean         @default(true)
+  lastRunAt    DateTime?
+  lastScore    Int?
+  lastGrade    String?
+
+  // Alert thresholds
+  alertOnScoreDrop Int @default(10) // Alert if score drops by this many points
+
+  // Alert destinations
+  alertEmail   String?
+  slackWebhook String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  history MonitorHistory[]
+
+  @@index([userId])
+  @@index([active])
+  @@map("monitors")
+}
+
+// ─── Monitor History ─────────────────────────────────────────────────────────
+// Historical score data per monitor run — powers trend charts
+
+model MonitorHistory {
+  id        String @id @default(cuid())
+  monitorId String
+
+  score     Int
+  grade     String
+  runAt     DateTime @default(now())
+
+  // Did this run trigger an alert?
+  alertSent Boolean @default(false)
+
+  // Relations
+  monitor Monitor @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId])
+  @@index([runAt])
+  @@map("monitor_history")
+}
+
+// ─── Usage ───────────────────────────────────────────────────────────────────
+// Track daily usage per user for rate limiting and billing
+
+model Usage {
+  id     String @id @default(cuid())
+  userId String
+
+  date            DateTime @db.Date
+  testsRun        Int      @default(0)
+  pagesCrawled    Int      @default(0)
+  aiReportsGenerated Int   @default(0)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // One record per user per day
+  @@index([userId])
+  @@index([date])
+  @@map("usage")
+}
+
+// ─── Team Members ────────────────────────────────────────────────────────────
+// Agency tier multi-seat support
+
+model TeamMember {
+  id      String @id @default(cuid())
+  ownerId String // The agency account that owns this team
+  userId  String // The member's user ID
+
+  role      String   @default("member") // owner / admin / member
+  invitedAt DateTime @default(now())
+  joinedAt  DateTime?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, userId])
+  @@index([ownerId])
+  @@map("team_members")
+}
+
+// ─── IP Rate Limit ───────────────────────────────────────────────────────────
+// Anonymous free-tier rate limiting by IP address
+
+model IpRateLimit {
+  ip        String   @id
+  testsToday Int     @default(0)
+  date      DateTime @db.Date
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@map("ip_rate_limits")
+}
