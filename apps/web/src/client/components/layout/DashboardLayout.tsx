@@ -23,7 +23,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -34,7 +34,7 @@ export function DashboardLayout({ children }: { children?: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Navbar />
       <Sidebar testsToday={testsToday} />
       <main className="md:pl-64 pt-20 min-h-screen">

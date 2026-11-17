@@ -100,7 +100,7 @@ export function ScanWaitingRoomPage() {
   }, [jobId, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 pt-20">

@@ -10,11 +10,12 @@ import { ScanWaitingRoomPage } from './pages/ScanWaitingRoomPage';
 import { ReportPage } from './pages/ReportPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { Navbar } from './components/layout/Navbar';
+import { BackgroundVideo } from './components/layout/BackgroundVideo';
 import { GlassCard } from './components/ui/GlassCard';
 
 function NotFoundPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center">
         <GlassCard className="p-12 max-w-md w-full">
@@ -31,22 +32,25 @@ function NotFoundPage() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/sign-in" element={<SignInPage />} />
-      <Route path="/sign-up" element={<SignUpPage />} />
-      <Route path="/scan/:id" element={<ScanWaitingRoomPage />} />
-      <Route path="/report/:id" element={<ReportPage />} />
+    <>
+      <BackgroundVideo />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/sign-in" element={<SignInPage />} />
+        <Route path="/sign-up" element={<SignUpPage />} />
+        <Route path="/scan/:id" element={<ScanWaitingRoomPage />} />
+        <Route path="/report/:id" element={<ReportPage />} />
 
-      {/* Dashboard Routes */}
-      <Route path="/dashboard" element={<DashboardLayout />}>
-        <Route index element={<DashboardPage />} />
-        <Route path="monitors" element={<MonitorsPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
+        {/* Dashboard Routes */}
+        <Route path="/dashboard" element={<DashboardLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="monitors" element={<MonitorsPage />} />
+          <Route path="reports" element={<ReportsPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
 
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </>
   );
 }
