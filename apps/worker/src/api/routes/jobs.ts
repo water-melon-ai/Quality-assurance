@@ -55,7 +55,7 @@ export default async function jobRoutes(fastify: FastifyInstance) {
       // Direct execution fallback: runs asynchronously in background!
       void runScan({ jobId: job.id, url, tier, userId: userId ?? null, maxPages }).catch(async (scanErr) => {
         const message = scanErr instanceof Error ? scanErr.message : String(scanErr);
-        fastify.log.error(`[worker] direct scan ${job.id} failed:`, message);
+        fastify.log.error({ err: scanErr }, `[worker] direct scan ${job.id} failed: ${message}`);
         await database.jobs.failJob(job.id, message.slice(0, 500));
       });
     }

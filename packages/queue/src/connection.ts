@@ -24,7 +24,7 @@ export const connection = new Redis(REDIS_URL, redisOptions);
 // Error handling to prevent unhandled promise rejections on connection failure
 connection.on('error', (err) => {
   // Log once as warning instead of throwing unhandled
-  if (err?.code !== 'ECONNREFUSED') {
+  if ((err as NodeJS.ErrnoException)?.code !== 'ECONNREFUSED') {
     console.error('[Redis Error]', err);
   }
 });
